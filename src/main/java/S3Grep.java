@@ -1,6 +1,6 @@
 package main.java;
 
-import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -20,6 +20,7 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 
 public class S3Grep implements Runnable {
 
@@ -31,7 +32,7 @@ public class S3Grep implements Runnable {
 
 
     public static void main(String[] args) throws Exception {
-
+        logger.removeAllAppenders();
 
         if(args.length != 1) {
             throw new Exception("You must pass through one argument, the configuration file. Exiting");
@@ -44,14 +45,14 @@ public class S3Grep implements Runnable {
         ConsoleAppender console = new ConsoleAppender();
         console.setThreshold(Level.toLevel( configuration.getProperty("log_level") != null ? configuration.getProperty("log_level")  : "INFO") );
         console.setLayout(new PatternLayout( configuration.getProperty("logger_pattern") != null ? configuration.getProperty("logger_pattern")  : "%d{dd MMM yyyy HH:mm:ss} [%p] %m%n"));
-        console.activateOptions();;
+        console.activateOptions();
         logger.addAppender(console);
 
         if(isRegexSearch()) {
             patternMatcher = Pattern.compile(configuration.getProperty("search_term"));
         }
 
-        s3Client = new AmazonS3Client( new BasicAWSCredentials( (String)configuration.getProperty("s3.access_key"), (String)configuration.getProperty("s3.secret_key") ) );
+        s3Client = new AmazonS3Client( new EnvironmentVariableCredentialsProvider());
 
         ExecutorService searchPool = Executors.newFixedThreadPool(getSearchThreads());
 
@@ -103,10 +104,23 @@ public class S3Grep implements Runnable {
             int lineNumber = 0;
             while ( (line = reader.readLine()) != null ) {
                 lineNumber++;
+                String pattern = "";
 
                 if( patternMatcher != null && patternMatcher.matcher(line).matches()
-                    || patternMatcher == null && line.contains(searchTerm)) {
-                    logger.info(fileKey + ":" + lineNumber + ":" + line);
+                        || patternMatcher == null && line.toLowerCase().contains(pattern = searchTerm.toLowerCase()+":")
+                        || patternMatcher == null && line.toLowerCase().contains(pattern = searchTerm.toLowerCase()+" :")
+                        || patternMatcher == null && line.toLowerCase().contains(pattern = searchTerm.toLowerCase()+"=")
+                        || patternMatcher == null && line.toLowerCase().contains(pattern = searchTerm.toLowerCase()+" =")
+                        || patternMatcher == null && line.toLowerCase().contains(pattern = "< "+searchTerm.toLowerCase()+" >")
+                        || patternMatcher == null && line.toLowerCase().contains(pattern = "<"+searchTerm.toLowerCase()+">")) {
+
+                    // Cut previous and forward 80 chars of key words
+                    int previousIndex = line.toLowerCase().indexOf(pattern.toLowerCase())-80;
+                    int forwardIndex = line.toLowerCase().indexOf(pattern.toLowerCase())+80;
+                    int startPoint = line.toLowerCase().indexOf(pattern.toLowerCase()) <80? 0: previousIndex;
+                    int endPoint = line.length() <forwardIndex? line.length(): forwardIndex;
+
+                    logger.info(fileKey + ":" + lineNumber + ":" + line.substring(startPoint,endPoint));
                 }
 
 
@@ -123,14 +137,6 @@ public class S3Grep implements Runnable {
 
     private static void checkConfiguration() throws Exception
     {
-        if(configurationValueExists("s3.access_key") == false) {
-           throw new Exception("You must set your s3 access key");
-        }
-
-        if(configurationValueExists("s3.secret_key") == false) {
-            throw new Exception("You must set your s3 secret key");
-        }
-
         if(configurationValueExists("s3.bucket") == false) {
             throw new Exception("You must set your s3 bucket for the search");
         }
