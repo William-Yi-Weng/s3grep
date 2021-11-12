@@ -15,6 +15,8 @@ The script is using for batch scan the target buckets or all the buckets under y
 or
 ```sh run.sh password``` -- scan all s3 bucket over the current account
 
+## Output
+It will generate the records into .out format files under tmp folder
 
 The original author is from https://github.com/Setfive/s3grep
 More information at http://shout.setfive.com/2016/10/04/s3grep-searching-s3-files-and-buckets/
