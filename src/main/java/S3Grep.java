@@ -106,13 +106,7 @@ public class S3Grep implements Runnable {
                 lineNumber++;
                 String pattern = "";
 
-                if( patternMatcher != null && patternMatcher.matcher(line).matches()
-                        || patternMatcher == null && line.toLowerCase().contains(pattern = searchTerm.toLowerCase()+":")
-                        || patternMatcher == null && line.toLowerCase().contains(pattern = searchTerm.toLowerCase()+" :")
-                        || patternMatcher == null && line.toLowerCase().contains(pattern = searchTerm.toLowerCase()+"=")
-                        || patternMatcher == null && line.toLowerCase().contains(pattern = searchTerm.toLowerCase()+" =")
-                        || patternMatcher == null && line.toLowerCase().contains(pattern = "< "+searchTerm.toLowerCase()+" >")
-                        || patternMatcher == null && line.toLowerCase().contains(pattern = "<"+searchTerm.toLowerCase()+">")) {
+                if( patternMatcher != null && patternMatcher.matcher(line).matches()) {
 
                     // Cut previous and forward 80 chars of key words
                     int previousIndex = line.toLowerCase().indexOf(pattern.toLowerCase())-80;
