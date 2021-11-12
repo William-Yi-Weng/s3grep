@@ -57,7 +57,7 @@ public class S3Grep implements Runnable {
         ExecutorService searchPool = Executors.newFixedThreadPool(getSearchThreads());
 
         ObjectListing listing;
-        ListObjectsRequest listingRequest = new ListObjectsRequest().withBucketName( (String)configuration.getProperty("s3.bucket") );
+        ListObjectsRequest listingRequest = new ListObjectsRequest().withBucketName( (String)configuration.getProperty("scan_bucket") );
 
         do {
 
@@ -91,7 +91,7 @@ public class S3Grep implements Runnable {
     public void run() {
 
         logger.debug("Checking file: " + fileKey);
-        S3Object object = s3Client.getObject(configuration.getProperty("s3.bucket"),fileKey);
+        S3Object object = s3Client.getObject(configuration.getProperty("scan_bucket"),fileKey);
 
         try(
                 InputStream content = object.getObjectContent();
@@ -131,7 +131,7 @@ public class S3Grep implements Runnable {
 
     private static void checkConfiguration() throws Exception
     {
-        if(configurationValueExists("s3.bucket") == false) {
+        if(configurationValueExists("scan_bucket") == false) {
             throw new Exception("You must set your s3 bucket for the search");
         }
 

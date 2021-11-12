@@ -13,7 +13,6 @@ rm -fr ./tmp
 mkdir tmp
 
 BUCKETS=()
-echo $S3_bucket
 IFS=':' read -ra temp_S3_buckets <<< "${2}"
 
 for p in "${temp_S3_buckets[@]}"; do
@@ -42,7 +41,7 @@ do
     	continue
   	fi
 
-	sed -n "s/<s3.bucket>/$buck/g" ./tmp/s3grep.properties
+	sed -n "s/<scan.bucket>/$buck/g" ./tmp/s3grep.properties
 	sed -n "s/<search_term>/$search_term/g" ./tmp/s3grep.properties
 
   	FILE="tmp/$buck.out"
